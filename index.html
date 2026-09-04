@@ -1,0 +1,1220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Promptly — AI Image Prompt Library & Gallery</title>
+
+<!-- SEO meta tags -->
+<meta name="description" content="Promptly is a free curated library of AI image prompts for Midjourney, DALL·E, Stable Diffusion & more. Browse by category, preview the image, and copy the prompt with one tap." />
+<meta name="keywords" content="AI prompt library, Midjourney prompts, DALL-E prompts, Stable Diffusion prompts, prompt gallery, AI art prompts" />
+<meta name="author" content="Promptly" />
+<meta name="robots" content="index, follow" />
+
+<!-- Open Graph -->
+<meta property="og:title" content="Promptly — AI Image Prompt Library" />
+<meta property="og:description" content="A curated gallery of AI image prompts. Free to browse and copy." />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://promptly.vercel.app/preview.png" />
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Promptly — AI Prompt Library" />
+<meta name="twitter:description" content="Browse & copy the best AI image prompts. Free." />
+
+<meta name="theme-color" content="#f8f5ee" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#1a1a24" media="(prefers-color-scheme: dark)" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
+<link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  /* ---------- Design tokens ---------- */
+  :root {
+    --bg:        oklch(0.985 0.008 80);
+    --bg-elev:  #ffffff;
+    --ink:      oklch(0.20 0.02 60);
+    --ink-2:    oklch(0.42 0.02 60);
+    --ink-3:    oklch(0.62 0.02 60);
+    --line:     oklch(0.92 0.01 80);
+    --line-2:   oklch(0.88 0.01 80);
+    --accent:   oklch(0.68 0.17 30);
+    --danger:   oklch(0.62 0.19 25);
+    --good:     oklch(0.62 0.15 155);
+    --radius-sm: 12px;
+    --radius:    20px;
+    --radius-lg: 28px;
+    --shadow-1: 0 1px 2px rgba(30,20,10,.04), 0 2px 6px rgba(30,20,10,.05);
+    --shadow-2: 0 6px 20px rgba(30,20,10,.08), 0 2px 6px rgba(30,20,10,.05);
+    --shadow-3: 0 20px 60px rgba(20,10,0,.18), 0 8px 24px rgba(20,10,0,.10);
+  }
+
+  html[data-theme="dark"] {
+    --bg:      oklch(0.17 0.012 265);
+    --bg-elev: oklch(0.22 0.014 265);
+    --ink:     oklch(0.96 0.005 80);
+    --ink-2:   oklch(0.78 0.008 80);
+    --ink-3:   oklch(0.58 0.010 80);
+    --line:    oklch(0.28 0.014 265);
+    --line-2:  oklch(0.34 0.014 265);
+    --accent:  oklch(0.75 0.16 30);
+    --shadow-1: 0 1px 2px rgba(0,0,0,.35), 0 2px 6px rgba(0,0,0,.30);
+    --shadow-2: 0 6px 20px rgba(0,0,0,.45), 0 2px 6px rgba(0,0,0,.30);
+    --shadow-3: 0 20px 60px rgba(0,0,0,.55), 0 8px 24px rgba(0,0,0,.40);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    min-height: 100dvh;
+    overscroll-behavior-y: none;
+  }
+  .serif { font-family: 'DM Serif Display', 'Times New Roman', serif; font-weight: 400; letter-spacing: -0.01em; }
+  .mono  { font-family: 'JetBrains Mono', monospace; }
+  ::selection { background: var(--accent); color: white; }
+
+  button, input, textarea, select {
+    font-family: inherit; color: inherit;
+  }
+  button { cursor: pointer; border: 0; background: transparent; }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .icon-btn {
+    width: 40px; height: 40px; border-radius: 999px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--bg-elev); color: var(--ink);
+    box-shadow: var(--shadow-1);
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .icon-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-2); }
+
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 0 18px; height: 42px;
+    border-radius: 999px;
+    background: var(--ink); color: var(--bg);
+    font-weight: 700; font-size: 14px;
+    box-shadow: var(--shadow-1);
+    transition: transform .15s ease, box-shadow .15s ease;
+    white-space: nowrap;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: var(--shadow-2); }
+  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+  .btn-primary.accent { background: var(--accent); color: white; }
+  .btn-primary.danger { background: transparent; color: var(--danger); box-shadow: none; border: 1px solid color-mix(in oklch, var(--danger) 35%, transparent); }
+  .btn-primary.ghost  { background: transparent; color: var(--ink-2); box-shadow: none; border: 1px solid var(--line); }
+
+  .app-shell { max-width: 1440px; margin: 0 auto; padding: 0 clamp(12px, 3vw, 32px); }
+
+  /* Top bar */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    background: color-mix(in oklch, var(--bg) 88%, transparent);
+    backdrop-filter: saturate(140%) blur(18px);
+    -webkit-backdrop-filter: saturate(140%) blur(18px);
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar-inner {
+    max-width: 1440px; margin: 0 auto;
+    padding: 14px clamp(12px, 3vw, 32px);
+    display: flex; align-items: center; gap: 14px;
+  }
+  .brand {
+    display: flex; align-items: baseline; gap: 8px;
+    font-family: 'DM Serif Display', serif; font-size: 28px; letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .brand-dot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 999px;
+    background: var(--accent); transform: translateY(-3px);
+  }
+  .search {
+    flex: 1; min-width: 0; position: relative;
+    max-width: 480px;
+  }
+  .search input {
+    width: 100%; height: 44px;
+    padding: 0 16px 0 44px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--bg-elev);
+    color: var(--ink);
+    font-size: 15px; font-family: inherit;
+    outline: none;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .search input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 20%, transparent); }
+  .search svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--ink-3); pointer-events: none; }
+  .topbar-actions { display: flex; align-items: center; gap: 8px; }
+  .avatar-btn {
+    width: 40px; height: 40px; border-radius: 999px;
+    background: linear-gradient(135deg, oklch(0.85 0.13 30), oklch(0.75 0.15 355));
+    color: white;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px;
+    box-shadow: var(--shadow-1);
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .avatar-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-2); }
+
+  #add-btn-mobile { display: none; }
+  @media (max-width: 640px) {
+    .search { display: none; }
+    .brand { font-size: 24px; }
+    #add-btn { display: none !important; }
+    #add-btn-mobile {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 40px; height: 40px; border-radius: 999px;
+      background: var(--ink); color: var(--bg);
+      box-shadow: var(--shadow-1);
+    }
+  }
+
+  .hero { padding: 32px 0 12px; }
+  .hero h1 {
+    font-family: 'DM Serif Display', serif; font-weight: 400;
+    font-size: clamp(32px, 5.5vw, 52px);
+    line-height: 1.02; letter-spacing: -0.02em;
+    margin: 0 0 8px;
+    color: var(--ink);
+    text-wrap: pretty;
+  }
+  .hero h1 em { font-style: italic; color: var(--accent); }
+  .hero p {
+    margin: 0; color: var(--ink-2);
+    font-size: clamp(14px, 1.5vw, 17px);
+    max-width: 540px;
+  }
+
+  .cats {
+    position: sticky; top: 72px; z-index: 40;
+    padding: 14px 0 14px;
+    background: color-mix(in oklch, var(--bg) 92%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-mask-image: linear-gradient(to right, black 0, black calc(100% - 40px), transparent 100%);
+            mask-image: linear-gradient(to right, black 0, black calc(100% - 40px), transparent 100%);
+  }
+  .cats-inner {
+    display: flex; gap: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+    padding-right: 48px;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    cursor: grab;
+  }
+  .cats-inner:active { cursor: grabbing; }
+  .cats-inner.is-dragging { scroll-snap-type: none; cursor: grabbing; }
+  .cats-inner.is-dragging .cat-pill { pointer-events: none; }
+  .cats-inner::-webkit-scrollbar { display: none; }
+  .cat-pill {
+    flex: 0 0 auto;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 14px; border-radius: 999px;
+    white-space: nowrap;
+    border: 1px solid var(--line);
+    background: var(--bg-elev);
+    color: var(--ink);
+    font-size: 14px; font-weight: 600;
+    transition: transform .15s ease, background .15s ease, border-color .15s ease, color .15s ease;
+    scroll-snap-align: start;
+  }
+  .cat-pill:hover { transform: translateY(-1px); }
+  .cat-pill[data-active="true"] {
+    background: var(--ink); color: var(--bg); border-color: var(--ink);
+  }
+  .cat-pill .emoji { font-size: 15px; line-height: 1; }
+  .cat-count {
+    font-size: 11px; font-weight: 700;
+    padding: 2px 7px; border-radius: 999px;
+    background: color-mix(in oklch, var(--ink) 8%, transparent);
+    color: var(--ink-3);
+    min-width: 20px; text-align: center;
+  }
+  .cat-pill[data-active="true"] .cat-count {
+    background: color-mix(in oklch, var(--bg) 18%, transparent);
+    color: var(--bg);
+  }
+
+  /* Masonry */
+  .masonry {
+    column-count: 2;
+    column-gap: 14px;
+    padding: 18px 0 140px;
+  }
+  @media (min-width: 640px)  { .masonry { column-count: 3; column-gap: 16px; } }
+  @media (min-width: 900px)  { .masonry { column-count: 4; column-gap: 18px; } }
+  @media (min-width: 1200px) { .masonry { column-count: 5; column-gap: 20px; } }
+
+  .card {
+    display: block;
+    position: relative;
+    margin: 0 0 14px;
+    break-inside: avoid;
+    border-radius: var(--radius);
+    background: var(--bg-elev);
+    overflow: hidden;
+    box-shadow: var(--shadow-1);
+    cursor: pointer;
+    transition: transform .22s cubic-bezier(.2,.9,.3,1.2), box-shadow .22s ease;
+    animation: card-in .5s cubic-bezier(.2,.9,.3,1.05) both;
+  }
+  @media (min-width: 640px) { .card { margin-bottom: 16px; } }
+  @media (min-width: 900px) { .card { margin-bottom: 18px; } }
+  @keyframes card-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+  .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
+  .card .thumb { display: block; width: 100%; background: var(--line); }
+  .card img {
+    display: block; width: 100%; height: auto;
+    aspect-ratio: var(--ar, 1 / 1);
+    object-fit: cover;
+    transition: transform .5s ease;
+  }
+  .card:hover img { transform: scale(1.03); }
+
+  .card-overlay {
+    position: absolute; inset: auto 0 0 0;
+    padding: 12px 12px 10px;
+    background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,.55) 100%);
+    color: white;
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 10px;
+    opacity: 0; transform: translateY(6px);
+    transition: opacity .2s ease, transform .2s ease;
+    pointer-events: none;
+  }
+  .card:hover .card-overlay,
+  .card:focus-visible .card-overlay { opacity: 1; transform: none; }
+  .card-title {
+    font-size: 13px; font-weight: 600; line-height: 1.25;
+    text-shadow: 0 1px 3px rgba(0,0,0,.4);
+    max-width: 70%;
+  }
+  .card-copy-mini {
+    pointer-events: all;
+    background: white; color: black;
+    padding: 6px 12px; border-radius: 999px;
+    font-size: 12px; font-weight: 700;
+    display: inline-flex; align-items: center; gap: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.25);
+    transition: transform .15s ease;
+  }
+  .card-copy-mini:hover { transform: scale(1.05); }
+  .card-cat {
+    position: absolute; top: 10px; left: 10px;
+    background: rgba(255,255,255,.92);
+    color: var(--ink);
+    font-size: 11px; font-weight: 700;
+    padding: 5px 10px; border-radius: 999px;
+    letter-spacing: 0.01em;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 2px 8px rgba(0,0,0,.12);
+  }
+
+  .empty-state {
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--ink-3);
+    font-size: 14px;
+  }
+  .empty-state.grand {
+    padding: 80px 20px 40px;
+    max-width: 480px; margin: 0 auto;
+  }
+  .empty-state.grand .empty-illo {
+    width: 120px; height: 120px; border-radius: 32px;
+    background: color-mix(in oklch, var(--accent) 12%, var(--bg-elev));
+    color: var(--accent);
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-bottom: 24px;
+  }
+  .empty-state.grand h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 32px; line-height: 1.15; margin: 0 0 10px;
+    color: var(--ink);
+  }
+  .empty-state.grand p {
+    margin: 0 0 24px;
+    color: var(--ink-2); font-size: 15px; line-height: 1.5;
+  }
+
+  /* Scrim + sheets */
+  .scrim {
+    position: fixed; inset: 0;
+    background: rgba(10,5,0,.5);
+    z-index: 90;
+    opacity: 0;
+    transition: opacity .28s ease;
+    pointer-events: none;
+    backdrop-filter: blur(2px);
+  }
+  .scrim[data-open="true"] { opacity: 1; pointer-events: all; }
+
+  .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    z-index: 100;
+    background: var(--bg-elev);
+    border-top-left-radius: 28px;
+    border-top-right-radius: 28px;
+    max-height: 92dvh;
+    transform: translateY(100%);
+    transition: transform .38s cubic-bezier(.2,.9,.3,1.05);
+    box-shadow: var(--shadow-3);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .sheet[data-open="true"] { transform: translateY(0); }
+  @media (min-width: 900px) {
+    .sheet {
+      left: auto; top: 0; bottom: 0; right: 0;
+      width: min(560px, 90vw);
+      max-height: 100dvh;
+      border-radius: 0;
+      border-left: 1px solid var(--line);
+      transform: translateX(100%);
+    }
+    .sheet[data-open="true"] { transform: translateX(0); }
+  }
+  .sheet-handle {
+    width: 44px; height: 5px; border-radius: 999px;
+    background: var(--line-2);
+    margin: 10px auto 0;
+    flex: 0 0 auto;
+  }
+  @media (min-width: 900px) { .sheet-handle { display: none; } }
+  .sheet-actions {
+    position: absolute; top: 14px; right: 14px; z-index: 2;
+    display: flex; gap: 8px;
+  }
+  .sheet-actions button {
+    width: 36px; height: 36px; border-radius: 999px;
+    background: rgba(255,255,255,.92);
+    color: var(--ink);
+    display: inline-flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow-1);
+  }
+  html[data-theme="dark"] .sheet-actions button { background: rgba(30,25,20,.92); color: var(--ink); }
+  .sheet-actions .danger:hover { color: var(--danger); }
+
+  .sheet-scroll {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .sheet-hero { position: relative; }
+  .sheet-hero img {
+    display: block; width: 100%;
+    max-height: 44dvh;
+    object-fit: cover;
+    background: var(--line);
+  }
+  .sheet-body { padding: 20px 22px 40px; }
+  .sheet-title {
+    font-family: 'DM Serif Display', serif; font-size: 26px; line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin: 4px 0 14px;
+    color: var(--ink);
+    text-wrap: pretty;
+  }
+
+  .copy-cta {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%;
+    height: 54px; border-radius: 16px;
+    background: var(--ink); color: var(--bg);
+    font-size: 16px; font-weight: 700;
+    box-shadow: var(--shadow-1);
+    transition: transform .15s ease, background .2s ease;
+    margin-bottom: 18px;
+  }
+  .copy-cta:hover { transform: translateY(-1px); }
+  .copy-cta[data-copied="true"] { background: var(--good); color: white; }
+  .copy-cta[data-copied="true"] .copy-check { display: inline-flex; }
+  .copy-cta[data-copied="true"] .copy-idle { display: none; }
+  .copy-check { display: none; align-items: center; gap: 10px; }
+
+  .prompt-card {
+    position: relative;
+    padding: 20px 22px 22px;
+    border-radius: 20px;
+    background: color-mix(in oklch, var(--bg) 60%, var(--bg-elev));
+    border: 1px solid var(--line);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: var(--ink-2);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  .prompt-card::before {
+    content: 'PROMPT';
+    position: absolute; top: -9px; left: 16px;
+    background: var(--bg-elev);
+    padding: 0 8px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 10px; font-weight: 800; letter-spacing: 0.14em;
+    color: var(--ink-3);
+  }
+
+  .similar { margin-top: 26px; margin-bottom: 12px; }
+  .similar h3 {
+    font-family: 'DM Serif Display', serif; font-weight: 400;
+    font-size: 20px; margin: 0; color: var(--ink);
+  }
+  .similar-rail {
+    display: flex; gap: 10px; overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+    margin: 0 -22px;
+    padding-left: 22px; padding-right: 22px;
+  }
+  .similar-rail::-webkit-scrollbar { display: none; }
+  .similar-thumb {
+    flex: 0 0 auto;
+    width: 108px; height: 140px;
+    border-radius: 14px;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: var(--shadow-1);
+    transition: transform .18s ease;
+    position: relative;
+  }
+  .similar-thumb:hover { transform: translateY(-2px); }
+  .similar-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .similar-thumb .st-label {
+    position: absolute; left: 8px; bottom: 8px;
+    background: rgba(255,255,255,.92);
+    color: var(--ink);
+    font-size: 10px; font-weight: 700;
+    padding: 3px 7px; border-radius: 999px;
+  }
+
+  /* Profile panel */
+  .profile {
+    position: fixed; top: 0; bottom: 0; right: 0;
+    width: min(440px, 92vw);
+    background: var(--bg-elev);
+    z-index: 110;
+    transform: translateX(105%);
+    transition: transform .38s cubic-bezier(.2,.9,.3,1.05);
+    box-shadow: var(--shadow-3);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    will-change: transform;
+  }
+  .profile[data-open="true"] { transform: translateX(0); }
+  .profile-header { padding: 20px 22px 16px; border-bottom: 1px solid var(--line); position: relative; }
+  .profile-cover {
+    position: relative;
+    height: 100px;
+    margin: -20px -22px 12px;
+    background: linear-gradient(135deg, oklch(0.85 0.13 30), oklch(0.75 0.15 355));
+  }
+  .profile-avatar {
+    position: absolute; left: 22px; bottom: -30px;
+    width: 68px; height: 68px; border-radius: 999px;
+    background: linear-gradient(135deg, oklch(0.75 0.15 60), oklch(0.7 0.16 320));
+    border: 4px solid var(--bg-elev);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: white; font-weight: 800; font-size: 22px;
+  }
+  .profile-close {
+    position: absolute; top: 12px; right: 12px;
+    width: 36px; height: 36px; border-radius: 999px;
+    background: rgba(255,255,255,.92); color: var(--ink);
+    display: inline-flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow-1);
+  }
+  html[data-theme="dark"] .profile-close { background: rgba(30,25,20,.92); }
+  .profile-name { margin: 34px 0 2px; font-family: 'DM Serif Display', serif; font-size: 24px; }
+  .profile-handle { color: var(--ink-3); font-size: 14px; word-break: break-word; }
+  .profile-stats { display: flex; gap: 22px; margin-top: 14px; font-size: 13px; color: var(--ink-2); }
+  .profile-stats b { color: var(--ink); font-size: 15px; display: block; }
+  .profile-body { padding: 22px 22px 40px; overflow-y: auto; flex: 1; border-top: 1px solid var(--line); }
+
+  .profile-info { display: flex; flex-direction: column; gap: 4px; }
+  .info-row {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 12px 4px;
+  }
+  .info-row + .info-row { border-top: 1px solid var(--line); }
+  .info-ico {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    display: grid; place-items: center;
+    color: var(--ink-2);
+    flex-shrink: 0;
+  }
+  .info-txt { flex: 1; min-width: 0; padding-top: 2px; }
+  .info-t1 { font-size: 14px; font-weight: 700; color: var(--ink); }
+  .info-t2 { font-size: 12.5px; color: var(--ink-3); line-height: 1.5; margin-top: 3px; }
+
+  .admin-actions { margin-top: 24px; display: flex; flex-direction: column; gap: 10px; }
+  .admin-action-btn {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    color: var(--ink);
+    font-weight: 600; font-size: 14px;
+    text-align: left;
+    transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+  }
+  .admin-action-btn:hover {
+    transform: translateY(-1px); box-shadow: var(--shadow-1);
+    border-color: var(--line-2);
+  }
+  .admin-action-btn .a-ico {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: grid; place-items: center;
+    background: color-mix(in oklch, var(--accent) 12%, var(--bg-elev));
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+  .admin-action-btn .a-txt { flex: 1; min-width: 0; }
+  .admin-action-btn .a-sub { font-size: 12px; color: var(--ink-3); margin-top: 2px; font-weight: 500; }
+  .admin-action-btn.danger .a-ico { background: color-mix(in oklch, var(--danger) 12%, transparent); color: var(--danger); }
+  .admin-action-btn.danger:hover { color: var(--danger); }
+
+  .support-section { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--line); }
+  .support-heading {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    margin: 0 0 4px;
+    color: var(--ink);
+  }
+  .support-sub {
+    font-size: 13px;
+    color: var(--ink-3);
+    margin: 0 0 16px;
+    line-height: 1.5;
+  }
+  .support-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    color: inherit;
+    margin-bottom: 10px;
+    transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+  }
+  .support-card:hover {
+    transform: translateY(-1px);
+    border-color: var(--line-2);
+    box-shadow: var(--shadow-1);
+  }
+  .support-card .ico {
+    width: 40px; height: 40px;
+    display: grid; place-items: center;
+    border-radius: 10px;
+    flex-shrink: 0;
+    font-size: 20px;
+  }
+  .support-card .ico.coffee { background: oklch(0.92 0.09 75); color: oklch(0.45 0.15 55); }
+  html[data-theme="dark"] .support-card .ico.coffee { background: oklch(0.35 0.08 75); color: oklch(0.88 0.12 80); }
+  .support-card .txt { flex: 1; min-width: 0; }
+  .support-card .t1 { font-size: 14px; font-weight: 700; color: var(--ink); }
+  .support-card .t2 { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+  .support-card .arrow {
+    color: var(--ink-3);
+    flex-shrink: 0;
+    transition: transform .18s ease, color .18s ease;
+  }
+  .support-card:hover .arrow { color: var(--accent); transform: translateX(2px); }
+
+  .support-footer {
+    margin-top: 20px;
+    padding: 14px 16px;
+    background: linear-gradient(135deg, oklch(0.96 0.03 60), oklch(0.94 0.05 30));
+    border-radius: var(--radius-sm);
+    text-align: center;
+  }
+  html[data-theme="dark"] .support-footer {
+    background: linear-gradient(135deg, oklch(0.26 0.03 60), oklch(0.24 0.05 30));
+  }
+  .support-footer .msg {
+    font-size: 13px;
+    color: var(--ink-2);
+    line-height: 1.55;
+  }
+  .support-footer .msg b { color: var(--ink); }
+
+  /* Editor */
+  .editor {
+    position: fixed;
+    left: 50%; top: 50%;
+    transform: translate(-50%, calc(-50% + 20px)) scale(0.98);
+    width: min(640px, 94vw);
+    max-height: 92dvh;
+    background: var(--bg-elev);
+    border-radius: 22px;
+    z-index: 120;
+    box-shadow: var(--shadow-3);
+    opacity: 0; pointer-events: none;
+    transition: transform .32s cubic-bezier(.2,.9,.3,1.05), opacity .22s ease;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .editor[data-open="true"] {
+    opacity: 1; pointer-events: all;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  @media (max-width: 640px) {
+    .editor {
+      left: 0; right: 0; bottom: 0; top: auto;
+      width: 100%;
+      max-height: 92dvh;
+      border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+      border-top-left-radius: 22px; border-top-right-radius: 22px;
+      transform: translateY(100%);
+    }
+    .editor[data-open="true"] { transform: translateY(0); }
+  }
+
+  .editor-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .editor-head h2 {
+    margin: 0;
+    font-family: 'DM Serif Display', serif; font-size: 22px;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .editor-close {
+    width: 34px; height: 34px; border-radius: 999px;
+    background: color-mix(in oklch, var(--ink) 8%, transparent);
+    color: var(--ink);
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background .15s ease;
+  }
+  .editor-close:hover { background: color-mix(in oklch, var(--ink) 14%, transparent); }
+
+  .editor-body {
+    padding: 20px 22px 8px;
+    overflow-y: auto;
+    flex: 1;
+  }
+  .editor-foot {
+    padding: 14px 22px;
+    border-top: 1px solid var(--line);
+    display: flex; align-items: center; gap: 10px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  .editor-foot .spacer { flex: 1; }
+
+  .field { margin-bottom: 16px; }
+  .field label.lbl {
+    display: block;
+    font-size: 12px; font-weight: 800; letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 8px;
+  }
+  .field .hint {
+    font-size: 12px; color: var(--ink-3);
+    margin-top: 6px;
+  }
+  .input, .textarea, .select {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: color-mix(in oklch, var(--bg) 40%, var(--bg-elev));
+    color: var(--ink);
+    font-size: 14.5px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .input:focus, .textarea:focus, .select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 20%, transparent);
+  }
+  .textarea {
+    min-height: 140px;
+    resize: vertical;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13.5px; line-height: 1.6;
+  }
+  .select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 40px;
+  }
+
+  .drop {
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    border: 2px dashed var(--line-2);
+    border-radius: 16px;
+    background: color-mix(in oklch, var(--bg) 40%, var(--bg-elev));
+    color: var(--ink-3);
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .18s ease, background .18s ease, transform .18s ease;
+    min-height: 160px;
+    overflow: hidden;
+  }
+  .drop:hover, .drop[data-drag="true"] {
+    border-color: var(--accent);
+    background: color-mix(in oklch, var(--accent) 6%, var(--bg-elev));
+  }
+  .drop .drop-idle { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .drop .drop-idle svg { color: var(--ink-3); }
+  .drop .drop-idle .primary { color: var(--ink); font-weight: 700; font-size: 14px; }
+  .drop .drop-idle .sec { color: var(--ink-3); font-size: 12.5px; }
+
+  .drop[data-filled="true"] { padding: 0; border-style: solid; border-color: var(--line); background: var(--bg-elev); }
+  .drop[data-filled="true"] .drop-idle { display: none; }
+  .drop[data-filled="true"] .drop-filled { display: block; }
+  .drop .drop-filled { display: none; width: 100%; }
+  .drop-filled img {
+    display: block;
+    width: 100%; max-height: 340px;
+    object-fit: contain;
+    background: var(--line);
+  }
+  .drop-clear {
+    position: absolute; top: 10px; right: 10px;
+    width: 32px; height: 32px; border-radius: 999px;
+    background: rgba(0,0,0,.6); color: white;
+    display: inline-flex; align-items: center; justify-content: center;
+    z-index: 2;
+    transition: background .15s ease;
+  }
+  .drop-clear:hover { background: rgba(0,0,0,.85); }
+
+  /* Upload progress */
+  .upload-progress {
+    margin-top: 10px;
+    display: flex; flex-direction: column; gap: 6px;
+    padding: 10px 14px;
+    background: color-mix(in oklch, var(--accent) 8%, var(--bg-elev));
+    border: 1px solid color-mix(in oklch, var(--accent) 30%, transparent);
+    border-radius: 12px;
+    font-size: 12.5px;
+    color: var(--ink-2);
+  }
+  .upload-progress-track {
+    height: 6px; background: color-mix(in oklch, var(--ink) 8%, transparent);
+    border-radius: 999px; overflow: hidden;
+  }
+  .upload-progress-bar {
+    height: 100%; background: var(--accent);
+    border-radius: 999px;
+    transition: width .18s ease;
+    width: 0%;
+  }
+  .upload-progress-meta {
+    display: flex; justify-content: space-between;
+    font-weight: 600;
+  }
+
+  /* Login modal */
+  .login {
+    position: fixed;
+    left: 50%; top: 50%;
+    transform: translate(-50%, calc(-50% + 20px)) scale(0.98);
+    width: min(420px, 94vw);
+    background: var(--bg-elev);
+    border-radius: 22px;
+    z-index: 130;
+    box-shadow: var(--shadow-3);
+    opacity: 0; pointer-events: none;
+    transition: transform .32s cubic-bezier(.2,.9,.3,1.05), opacity .22s ease;
+    padding: 26px 26px 22px;
+    overflow: hidden;
+  }
+  .login[data-open="true"] {
+    opacity: 1; pointer-events: all;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  .login h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px; margin: 0 0 6px;
+    color: var(--ink);
+  }
+  .login p.sub { color: var(--ink-3); font-size: 13.5px; margin: 0 0 22px; }
+  .login .field { margin-bottom: 14px; }
+  .login-close {
+    position: absolute; top: 14px; right: 14px;
+    width: 34px; height: 34px; border-radius: 999px;
+    background: color-mix(in oklch, var(--ink) 8%, transparent);
+    color: var(--ink);
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background .15s ease;
+  }
+  .login-close:hover { background: color-mix(in oklch, var(--ink) 14%, transparent); }
+  .login-error {
+    padding: 10px 14px;
+    background: color-mix(in oklch, var(--danger) 10%, transparent);
+    border: 1px solid color-mix(in oklch, var(--danger) 30%, transparent);
+    color: var(--danger);
+    border-radius: 10px;
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+  .login-submit {
+    width: 100%;
+    height: 46px;
+    border-radius: 12px;
+    background: var(--ink); color: var(--bg);
+    font-weight: 700; font-size: 15px;
+    margin-top: 8px;
+    transition: transform .15s ease, opacity .15s ease;
+  }
+  .login-submit:hover:not(:disabled) { transform: translateY(-1px); }
+  .login-submit:disabled { opacity: 0.65; cursor: not-allowed; }
+  .login-lock-badge {
+    width: 56px; height: 56px; border-radius: 16px;
+    background: color-mix(in oklch, var(--accent) 12%, var(--bg-elev));
+    color: var(--accent);
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-bottom: 14px;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: calc(env(safe-area-inset-bottom, 0) + 24px);
+    left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--ink); color: var(--bg);
+    padding: 12px 18px; border-radius: 999px;
+    font-size: 14px; font-weight: 600;
+    box-shadow: var(--shadow-3);
+    opacity: 0; transition: opacity .2s ease, transform .28s cubic-bezier(.2,.9,.3,1.1);
+    pointer-events: none;
+    z-index: 200;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .toast[data-open="true"] { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<header class="topbar" role="banner">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span>Promptly</span>
+      <span class="brand-dot" aria-hidden="true"></span>
+    </div>
+    <label class="search">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+      <input id="search-input" type="search" placeholder="Search prompts…" autocomplete="off" />
+    </label>
+    <div class="topbar-actions">
+      <button class="btn-primary accent" id="add-btn" style="display:none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>
+        Add prompt
+      </button>
+      <button id="add-btn-mobile" aria-label="Add prompt" style="display:none;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>
+      </button>
+      <button class="icon-btn" id="theme-toggle" title="Toggle theme" aria-label="Toggle theme">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
+      </button>
+      <button class="avatar-btn" id="profile-btn" aria-label="Open menu">Y</button>
+    </div>
+  </div>
+</header>
+
+<main class="app-shell" role="main">
+  <section class="hero">
+    <h1 class="serif" id="hero-title">A curated library of <em>AI image prompts.</em></h1>
+    <p id="hero-sub">Browse by category, preview the image, and copy the prompt with one tap. New prompts added regularly.</p>
+  </section>
+
+  <nav class="cats" aria-label="Categories">
+    <div class="cats-inner" id="cats"></div>
+  </nav>
+
+  <section id="masonry" class="masonry" aria-label="Prompt gallery"></section>
+</main>
+
+<!-- Scrim -->
+<div class="scrim" id="scrim" data-open="false"></div>
+
+<!-- Bottom sheet (prompt detail) -->
+<aside class="sheet" id="sheet" data-open="false" role="dialog" aria-label="Prompt details" aria-modal="true">
+  <div class="sheet-handle"></div>
+  <div class="sheet-actions">
+    <button id="sheet-edit" aria-label="Edit prompt" title="Edit" style="display:none;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"></path></svg>
+    </button>
+    <button id="sheet-delete" class="danger" aria-label="Delete prompt" title="Delete" style="display:none;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>
+    </button>
+    <button id="sheet-close" aria-label="Close prompt">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+    </button>
+  </div>
+  <div class="sheet-scroll" id="sheet-scroll">
+    <div class="sheet-hero"><img id="sheet-img" alt="" /></div>
+    <div class="sheet-body">
+      <span class="card-cat" id="sheet-cat" style="position:static; display:inline-block; margin-bottom:8px;">—</span>
+      <h2 class="sheet-title" id="sheet-title">—</h2>
+      <button class="copy-cta" id="copy-cta" data-copied="false">
+        <span class="copy-idle" style="display:inline-flex; align-items:center; gap:10px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          Copy prompt
+        </span>
+        <span class="copy-check">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+          Copied to clipboard
+        </span>
+      </button>
+      <div class="prompt-card" id="prompt-text">—</div>
+
+      <div id="similar-wrap">
+        <div class="similar"><h3 class="serif">More in this category</h3></div>
+        <div class="similar-rail" id="similar-rail"></div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- Profile / Admin panel -->
+<aside class="profile" id="profile" data-open="false" aria-label="Profile">
+  <button class="profile-close" id="profile-close" aria-label="Close">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+  </button>
+  <div class="profile-header">
+    <div class="profile-cover">
+      <div class="profile-avatar" id="profile-avatar">Y</div>
+    </div>
+    <div class="profile-name serif" id="profile-name">Admin panel</div>
+    <div class="profile-handle" id="profile-handle">Signed in</div>
+    <div class="profile-stats">
+      <div><b id="profile-count">0</b>Prompts</div>
+      <div><b id="profile-cats">0</b>Categories</div>
+    </div>
+  </div>
+  <div class="profile-body">
+    <!-- Admin actions -->
+    <div id="admin-block">
+      <div class="admin-actions">
+        <button class="admin-action-btn" id="export-btn">
+          <div class="a-ico">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </div>
+          <div class="a-txt">
+            <div>Export backup (JSON)</div>
+            <div class="a-sub">Download all prompts + categories as a file</div>
+          </div>
+        </button>
+        <button class="admin-action-btn danger" id="logout-btn">
+          <div class="a-ico">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </div>
+          <div class="a-txt">
+            <div>Log out</div>
+            <div class="a-sub">Sign out of the admin account</div>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <div class="profile-info" style="margin-top: 22px;">
+      <div class="info-row">
+        <div class="info-ico">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        </div>
+        <div class="info-txt">
+          <div class="info-t1">Cloud-synced</div>
+          <div class="info-t2">Prompts live in Firebase — same content on every device.</div>
+        </div>
+      </div>
+      <div class="info-row">
+        <div class="info-ico">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v2M12 19v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/><circle cx="12" cy="12" r="4"/></svg>
+        </div>
+        <div class="info-txt">
+          <div class="info-t1">Light &amp; dark mode</div>
+          <div class="info-t2">Tap the sun icon in the top bar to switch themes.</div>
+        </div>
+      </div>
+      <div class="info-row">
+        <div class="info-ico">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </div>
+        <div class="info-txt">
+          <div class="info-t1">One-tap copy</div>
+          <div class="info-t2">Tap any prompt to view and copy it to your clipboard.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Support section -->
+    <div class="support-section">
+      <h3 class="support-heading">Love Promptly?</h3>
+      <p class="support-sub">If it saved you time, a coffee goes a long way ☕</p>
+
+      <a href="https://www.buymeacoffee.com/YOUR_USERNAME" target="_blank" rel="noopener" class="support-card">
+        <div class="ico coffee">☕</div>
+        <div class="txt">
+          <div class="t1">Buy me a coffee</div>
+          <div class="t2">Keep Promptly free & ad-supported</div>
+        </div>
+        <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg>
+      </a>
+
+      <div class="support-footer">
+        <div class="msg">
+          Promptly is <b>free to use</b> — new prompts added regularly.<br />
+          Thank you for being here 💛
+        </div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- Editor modal (Add / Edit prompt) — admin only -->
+<aside class="editor" id="editor" data-open="false" role="dialog" aria-modal="true" aria-label="Add or edit prompt">
+  <div class="editor-head">
+    <h2 id="editor-title-h">Add a prompt</h2>
+    <button class="editor-close" id="editor-close" aria-label="Close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+    </button>
+  </div>
+  <form class="editor-body" id="editor-form" novalidate>
+    <div class="field">
+      <label class="lbl">Image</label>
+      <label class="drop" id="f-drop" for="f-file" data-filled="false" data-drag="false" tabindex="0" aria-label="Upload an image" style="cursor: pointer;">
+        <div class="drop-idle">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="3"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <path d="m21 15-5-5L5 21"></path>
+          </svg>
+          <div class="primary">Drop an image here, or click to pick</div>
+          <div class="sec">PNG, JPG, WEBP — or paste from clipboard</div>
+        </div>
+        <div class="drop-filled" id="f-preview">
+          <img id="f-preview-img" alt="Preview" />
+          <button type="button" class="drop-clear" id="f-preview-clear" aria-label="Remove image">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+          </button>
+        </div>
+      </label>
+      <input type="file" id="f-file" accept="image/*"
+             style="position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;" />
+
+      <div class="upload-progress" id="upload-progress" style="display:none;">
+        <div class="upload-progress-meta">
+          <span>Uploading to Cloudinary…</span>
+          <span id="upload-pct">0%</span>
+        </div>
+        <div class="upload-progress-track">
+          <div class="upload-progress-bar" id="upload-bar"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="lbl" for="f-title">Title <span style="font-weight:600; color: var(--ink-3); text-transform: none; letter-spacing: 0;">(optional)</span></label>
+      <input class="input" id="f-title" type="text" maxlength="120" placeholder="e.g. Cyberpunk portrait, neon rain" />
+    </div>
+
+    <div class="field">
+      <label class="lbl" for="f-cat">Category</label>
+      <select class="select" id="f-cat" required></select>
+      <input class="input" id="f-cat-new" type="text" placeholder="New category name" style="display:none; margin-top:8px;" maxlength="40" />
+    </div>
+
+    <div class="field">
+      <label class="lbl" for="f-prompt">Prompt text</label>
+      <textarea class="textarea" id="f-prompt" placeholder="Paste the full prompt here…" required></textarea>
+      <div class="hint">Tip: press <span class="mono">⌘/Ctrl + Enter</span> to save.</div>
+    </div>
+  </form>
+  <div class="editor-foot">
+    <button type="button" class="btn-primary danger" id="f-delete" style="display:none;">Delete</button>
+    <div class="spacer"></div>
+    <button type="button" class="btn-primary ghost" id="editor-cancel">Cancel</button>
+    <button type="button" class="btn-primary accent" id="f-save">Save prompt</button>
+  </div>
+</aside>
+
+<!-- Login modal (admin only) -->
+<aside class="login" id="login-modal" data-open="false" role="dialog" aria-modal="true" aria-label="Admin sign in">
+  <button class="login-close" id="login-close" aria-label="Close">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+  </button>
+  <div class="login-lock-badge">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+  </div>
+  <h2 class="serif">Admin sign in</h2>
+  <p class="sub">Only the admin can add or edit prompts here.</p>
+  <form id="login-form">
+    <div class="login-error" id="login-error" style="display:none;"></div>
+    <div class="field">
+      <label class="lbl" for="login-email">Email</label>
+      <input class="input" id="login-email" type="email" autocomplete="email" required placeholder="[email protected]" />
+    </div>
+    <div class="field">
+      <label class="lbl" for="login-password">Password</label>
+      <input class="input" id="login-password" type="password" autocomplete="current-password" required placeholder="••••••••" />
+    </div>
+    <button class="login-submit" id="login-submit" type="submit">Sign in</button>
+  </form>
+</aside>
+
+<!-- Toast -->
+<div class="toast" id="toast" data-open="false">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+  <span id="toast-text">Copied!</span>
+</div>
+
+<!-- Firebase SDK (compat = simple, no build step) -->
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+
+<!-- App config + logic -->
+<script src="firebase-config.js?v=1"></script>
+<script src="app.js?v=firebase1"></script>
+
+<script>
+  // Small glue: cancel + save wiring for the editor
+  document.getElementById('editor-cancel').addEventListener('click', () => {
+    document.getElementById('editor').dataset.open = 'false';
+    // recompute scrim after closing
+    const s = document.getElementById('sheet').dataset.open === 'true'
+           || document.getElementById('profile').dataset.open === 'true'
+           || document.getElementById('login-modal').dataset.open === 'true';
+    if (!s) {
+      document.getElementById('scrim').dataset.open = 'false';
+      document.body.style.overflow = '';
+    }
+  });
+  document.getElementById('f-save').addEventListener('click', () => {
+    const f = document.getElementById('editor-form');
+    if (f.requestSubmit) f.requestSubmit();
+    else f.dispatchEvent(new Event('submit', { cancelable: true }));
+  });
+</script>
+</body>
+</html>
